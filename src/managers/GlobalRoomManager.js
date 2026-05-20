@@ -73,11 +73,11 @@ class GlobalRoomManager {
    * @returns {Room|null} Phòng được promote từ queue (nếu có)
    */
   deleteRoom(guildId) {
+    const room = this.rooms.get(guildId); // ← lấy trước khi xóa
     const existed = this.rooms.has(guildId);
     this.rooms.delete(guildId);
 
     // Dọn timers của phòng
-    const room = this.rooms.get(guildId);
     if (room) room.cleanup();
 
     // Nếu có phòng trong queue, promote phòng đầu tiên

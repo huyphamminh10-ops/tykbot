@@ -334,16 +334,22 @@ class GameEngine {
   // ─── Round End ─────────────────────────────────────────────────────────────
 
   async _endRound(room, client) {
-    if (room._roundEnding) return; // Tránh double-trigger
-    room._roundEnding = true;
+    // Promise lock — nếu đang chạy thì chờ kết quả cũ, không chạy lại
+    if (room._endRoundPromise) return room._endRoundPromise;
 
+    room._endRoundPromise = this._doEndRound(room, client)
+      .finally(() => { room._endRoundPromise = null; });
+
+    return room._endRoundPromise;
+  }
+
+  async _doEndRound(room, client) {
     const activePlayers = room.getActivePlayers();
     const loser = room.findLowestScorer();
 
     if (!loser || activePlayers.length <= 1) {
       // Game over
       await this._endGame(room, client, activePlayers[0]);
-      room._roundEnding = false;
       return;
     }
 
@@ -389,7 +395,6 @@ class GameEngine {
     } else {
       // Next round
       room.currentRound += 1;
-      room._roundEnding = false;
       room.resetRoundScores();
 
       // Tăng thời gian Timer mode
@@ -468,10 +473,24 @@ class GameEngine {
     }, duration);
   }
 
+  // ─── Collector Cleanup ─────────────────────────────────────────────────────
+
+  _stopAllCollectors(guildId) {
+    const collectorMap = this._activeCollectors.get(guildId);
+    if (!collectorMap) return;
+    for (const collector of collectorMap.values()) {
+      try { collector.stop('game_ended'); } catch { /* ignore */ }
+    }
+    this._activeCollectors.delete(guildId);
+  }
+
   // ─── Game End ──────────────────────────────────────────────────────────────
 
   async _endGame(room, client, winner) {
     if (!winner) return;
+
+    // Dọn toàn bộ collectors trước — tránh memory leak
+    this._stopAllCollectors(room.id);
 
     winner.wins += 1;
 
