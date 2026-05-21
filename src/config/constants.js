@@ -22,12 +22,12 @@ export const GAME_CONFIG = {
   MAX_WORDS_CEILING: 24,
 
   // Classic mode sentences
-  CLASSIC_SENTENCES: 50,
+  CLASSIC_SENTENCES: 40,
   // Timer mode sentences
   TIMER_SENTENCES: 100,
 
   // Timer mode timing
-  TIMER_ROUND1_DURATION: 150000, // 2m30s
+  TIMER_ROUND1_DURATION: 120000, // 2m00s
   TIMER_ROUND_INCREMENT: 30000,  // +30s per round
 
   // Error limits

@@ -1,11 +1,15 @@
 // src/services/GeminiService.js
-import { GoogleGenAI } from '@google/genai';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 import { GAME_CONFIG, GAME_MODE } from '../config/constants.js';
 
 class GeminiService {
   constructor() {
-    this.ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-    this.model = 'gemini-2.0-flash';
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      console.error('[GeminiService] GEMINI_API_KEY chưa được cấu hình!');
+    }
+    this.client = new GoogleGenerativeAI(apiKey);
+    this.modelName = 'gemini-2.0-flash';
   }
 
   /**
@@ -26,16 +30,16 @@ class GeminiService {
 
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
-        const response = await this.ai.models.generateContent({
-          model: this.model,
-          contents: prompt,
-          config: {
+        const model = this.client.getGenerativeModel({
+          model: this.modelName,
+          generationConfig: {
             temperature: 0.9,
             maxOutputTokens: 8192,
           },
         });
 
-        const raw = response.text.trim();
+        const result = await model.generateContent(prompt);
+        const raw = result.response.text().trim();
 
         // Làm sạch: loại bỏ markdown code blocks nếu model vẫn trả về
         const cleaned = raw
@@ -73,6 +77,36 @@ class GeminiService {
         // Exponential backoff
         await new Promise(r => setTimeout(r, 1000 * attempt));
       }
+    }
+  }
+
+  /**
+   * Sinh thêm câu bù khi người chơi bị lỗi (để tổng số câu không bị thiếu)
+   * @param {number} needed - Số câu cần sinh thêm
+   * @param {number} minWords
+   * @param {number} maxWords
+   * @returns {Promise<string[]>}
+   */
+  async generateExtraSentences(needed, minWords, maxWords) {
+    const prompt = `Hãy tạo ra danh sách gồm ${needed} câu văn bằng tiếng Việt (hoặc xen kẽ tiếng Anh ngẫu nhiên khoảng 30%). Mỗi câu phải có độ dài từ ${minWords} đến ${maxWords} từ. Đa dạng chủ đề, không lặp lại. Trả về định dạng JSON thuần dạng mảng chuỗi: ["câu 1", "câu 2", ...] không kèm markdown code block, không kèm bất kỳ văn bản giải thích nào.`;
+
+    try {
+      const model = this.client.getGenerativeModel({
+        model: this.modelName,
+        generationConfig: { temperature: 0.9, maxOutputTokens: 2048 },
+      });
+      const result = await model.generateContent(prompt);
+      const raw = result.response.text().trim();
+      const cleaned = raw
+        .replace(/^```json\s*/i, '')
+        .replace(/^```\s*/i, '')
+        .replace(/\s*```$/i, '')
+        .trim();
+      const sentences = JSON.parse(cleaned);
+      if (!Array.isArray(sentences)) throw new Error('Not an array');
+      return sentences.filter(s => typeof s === 'string' && s.trim().length > 0).map(s => s.trim());
+    } catch {
+      return this._getFallbackSentences(needed);
     }
   }
 

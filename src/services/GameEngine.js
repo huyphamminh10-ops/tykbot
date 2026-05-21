@@ -312,6 +312,9 @@ class GameEngine {
 
         player.currentSentenceIndex += 1; // Bỏ qua câu sai
 
+        // Tạo câu bù để người chơi không bị thiếu câu do lỗi
+        this._appendReplacementSentence(room, player).catch(() => null);
+
         room.setTimer(async () => {
           if (room.status !== ROOM_STATUS.PLAYING || player.isEliminated) return;
           await this._sendNextSentence(room, player, client);
@@ -499,7 +502,9 @@ class GameEngine {
 
     for (const [, thread] of room.playerThreads.entries()) {
       await thread.send({ embeds: [winEmbed] }).catch(() => null);
-      await thread.setArchived(true).catch(() => null);
+      // Chờ 3 giây để người chơi đọc kết quả, sau đó xóa thread
+      await new Promise(r => setTimeout(r, 3000));
+      await thread.delete('Game ended - auto cleanup').catch(() => null);
     }
 
     // Gửi vào channel chính
@@ -518,7 +523,33 @@ class GameEngine {
     }
   }
 
-  // ─── Anti-Cheat Actions ────────────────────────────────────────────────────
+  // ─── Câu Bù Khi Lỗi ──────────────────────────────────────────────────────────
+
+  /**
+   * Thêm câu bù vào danh sách câu của room khi một người chơi bị skip câu do lỗi.
+   * Đảm bảo người chơi đó vẫn có đủ số câu cần hoàn thành.
+   * @param {object} room
+   * @param {object} player
+   */
+  async _appendReplacementSentence(room, player) {
+    try {
+      // Số câu còn lại người chơi chưa làm (từ index hiện tại đến cuối)
+      const remaining = room.sentences.length - player.currentSentenceIndex;
+      // Chỉ sinh bù nếu người chơi sẽ thiếu câu
+      if (remaining >= 1) return;
+
+      const { minWords, maxWords } = room.settings;
+      const extras = await geminiService.generateExtraSentences(1, minWords, maxWords);
+      if (extras && extras.length > 0) {
+        room.sentences.push(...extras);
+        console.log(`[GameEngine] Đã thêm ${extras.length} câu bù cho phòng ${room.id}`);
+      }
+    } catch (err) {
+      console.error('[GameEngine] _appendReplacementSentence error:', err.message);
+    }
+  }
+
+    // ─── Anti-Cheat Actions ────────────────────────────────────────────────────
 
   async _kickForCheating(room, player, thread, wpm, client) {
     player.isEliminated = true;
