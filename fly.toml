@@ -1,6 +1,6 @@
 # fly.toml — Fly.io config cho TykBot
 
-app = "tykbot"           # ← Đổi tên app của bạn ở đây
+app = "tykbot-xufb6g"           # ← Đổi tên app của bạn ở đây
 primary_region = "sin"   # Singapore — gần VN nhất
 
 [build]
