@@ -152,6 +152,22 @@ export async function handleMaxPlayersSelect(interaction) {
   await interaction.update(buildConfigEmbed(room, 1));
 }
 
+// ─── Config: Game Mode Toggle ─────────────────────────────────────────────────
+
+export async function handleGameModeToggle(interaction) {
+  const room = roomManager.getRoom(interaction.guildId);
+  if (!room || interaction.user.id !== room.hostId) {
+    return interaction.reply({ content: '❌ Không có quyền.', ephemeral: true });
+  }
+
+  room.gameMode = room.gameMode === 'Classic' ? 'Timer' : 'Classic';
+
+  const lobbyMsg = await interaction.channel.messages.fetch(room.lobbyMessageId).catch(() => null);
+  if (lobbyMsg) await lobbyMsg.edit(buildLobbyEmbed(room));
+
+  await interaction.update(buildConfigEmbed(room, 1));
+}
+
 // ─── Config: Hardcore Toggle ──────────────────────────────────────────────────
 
 export async function handleHardcoreToggle(interaction) {
@@ -421,7 +437,7 @@ export async function handleConfigPageNav(interaction, direction) {
   let currentPage = match ? parseInt(match[1]) : 1;
 
   const newPage = direction === 'next'
-    ? Math.min(currentPage + 1, 4)
+    ? Math.min(currentPage + 1, 5)
     : Math.max(currentPage - 1, 1);
 
   await interaction.update(buildConfigEmbed(room, newPage));

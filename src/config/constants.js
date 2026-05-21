@@ -69,6 +69,7 @@ export const CUSTOM_IDS = {
   CFG_MAXPLAYERS: 'tyk_cfg_maxplayers',
   CFG_PAGE_PREV: 'tyk_cfg_prev',
   CFG_PAGE_NEXT: 'tyk_cfg_next',
+  CFG_GAMEMODE: 'tyk_cfg_gamemode',
   CFG_HARDCORE: 'tyk_cfg_hardcore',
   CFG_FASTMODE: 'tyk_cfg_fastmode',
   CFG_WORDS_INPUT: 'tyk_cfg_words_input',

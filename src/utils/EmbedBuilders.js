@@ -107,16 +107,18 @@ export function buildLoadingEmbed(room) {
  * @param {number} page - 1..4
  */
 export function buildConfigEmbed(room, page = 1) {
+  const TOTAL_PAGES = 5;
   const pages = {
-    1: buildConfigPage1(room),
-    2: buildConfigPage2(room),
-    3: buildConfigPage3(room),
-    4: buildConfigPage4(room),
+    1: buildConfigPageGameMode(room),
+    2: buildConfigPage1(room),
+    3: buildConfigPage2(room),
+    4: buildConfigPage3(room),
+    5: buildConfigPage4(room),
   };
 
   const { embed, components: pageComponents } = pages[page] || pages[1];
 
-  // Navigation buttons
+  // Navigation: bỏ indicator button disabled — Discord mobile tự wrap nút disabled xuống dòng mới
   const navRow = new ActionRowBuilder().addComponents(
     new ButtonBuilder()
       .setCustomId(CUSTOM_IDS.CFG_PAGE_PREV)
@@ -124,18 +126,80 @@ export function buildConfigEmbed(room, page = 1) {
       .setStyle(ButtonStyle.Secondary)
       .setDisabled(page <= 1),
     new ButtonBuilder()
-      .setCustomId(`tyk_cfg_page_indicator`)
-      .setLabel(`Trang ${page}/4`)
-      .setStyle(ButtonStyle.Secondary)
-      .setDisabled(true),
-    new ButtonBuilder()
       .setCustomId(CUSTOM_IDS.CFG_PAGE_NEXT)
-      .setLabel('Trang sau ▶')
+      .setLabel(`Trang ${page}/${TOTAL_PAGES}  ▶`)
       .setStyle(ButtonStyle.Secondary)
-      .setDisabled(page >= 4),
+      .setDisabled(page >= TOTAL_PAGES),
   );
 
   return { embeds: [embed], components: [...pageComponents, navRow] };
+}
+
+// ─── Mô tả chế độ chơi ────────────────────────────────────────────────────────
+
+function getGameModeDescription(gameMode, isHardcore) {
+  if (gameMode === 'Classic') {
+    if (isHardcore) {
+      return (
+        '**Classic - Hardcore**\n' +
+        'Ai viết xong **50 câu** đầu tiên sẽ thắng.\n' +
+        'KHÔNG CHỪA CHỖ cho bất kì sai lầm nào — sai 1 câu là loại ngay!'
+      );
+    } else {
+      return (
+        '**Classic - Cơ bản**\n' +
+        'Ai viết xong **50 câu** đầu tiên sẽ thắng.\n' +
+        'Có **5 lượt sai** — viết sai sẽ mất 5 giây chuyển sang câu tiếp theo.'
+      );
+    }
+  } else {
+    if (isHardcore) {
+      return (
+        '**Timer - Hardcore**\n' +
+        'Ai gõ được **nhiều câu nhất** trong thời gian quy định sẽ thắng.\n' +
+        'KHÔNG CHỪA CHỖ cho bất kì sai lầm nào — sai 1 câu là loại ngay!'
+      );
+    } else {
+      return (
+        '**Timer - Cơ bản**\n' +
+        'Ai gõ được **nhiều câu nhất** trong thời gian quy định sẽ thắng.\n' +
+        'Có **5 lượt sai** — viết sai sẽ mất 5 giây chuyển sang câu tiếp theo.'
+      );
+    }
+  }
+}
+
+function buildConfigPageGameMode(room) {
+  const isClassic = room.gameMode === 'Classic';
+  const embed = new EmbedBuilder()
+    .setColor(COLORS.SECONDARY)
+    .setTitle('⚙️ Cấu Hình Phòng - Trang 1: Chế độ chơi')
+    .addFields(
+      {
+        name: isClassic ? '🎯 Classic (đang chọn)' : '🎯 Classic',
+        value: '50 câu — ai xong trước thắng.',
+        inline: true,
+      },
+      {
+        name: isClassic ? '⏱️ Timer' : '⏱️ Timer (đang chọn)',
+        value: 'Đếm ngược thời gian — ai gõ nhiều nhất thắng.',
+        inline: true,
+      },
+      {
+        name: '📖 Mô tả hiện tại',
+        value: getGameModeDescription(room.gameMode, room.settings.isHardcore),
+        inline: false,
+      },
+    );
+
+  const row = new ActionRowBuilder().addComponents(
+    new ButtonBuilder()
+      .setCustomId(CUSTOM_IDS.CFG_GAMEMODE)
+      .setLabel(isClassic ? '🔄 Chuyển sang Timer' : '🔄 Chuyển sang Classic')
+      .setStyle(ButtonStyle.Primary),
+  );
+
+  return { embed, components: [row] };
 }
 
 function buildConfigPage1(room) {
@@ -167,7 +231,7 @@ function buildConfigPage1(room) {
 function buildConfigPage2(room) {
   const embed = new EmbedBuilder()
     .setColor(COLORS.SECONDARY)
-    .setTitle('⚙️ Cấu Hình Phòng - Trang 2: Chế độ đặc biệt')
+    .setTitle('⚙️ Cấu Hình Phòng - Trang 3: Chế độ đặc biệt')
     .addFields(
       {
         name: '☠️ Hardcore Mode',
@@ -182,6 +246,11 @@ function buildConfigPage2(room) {
           ? '✅ **BẬT** - 2 giây giữa các câu.'
           : '❌ **TẮT** - 5 giây giữa các câu.',
         inline: true,
+      },
+      {
+        name: '📖 Mô tả chế độ hiện tại',
+        value: getGameModeDescription(room.gameMode, room.settings.isHardcore),
+        inline: false,
       },
     );
 
@@ -202,7 +271,7 @@ function buildConfigPage2(room) {
 function buildConfigPage3(room) {
   const embed = new EmbedBuilder()
     .setColor(COLORS.SECONDARY)
-    .setTitle('⚙️ Cấu Hình Phòng - Trang 3: Độ dài câu đố')
+    .setTitle('⚙️ Cấu Hình Phòng - Trang 4: Độ dài câu đố')
     .addFields({
       name: '📏 Cấu hình hiện tại',
       value: `Tối thiểu: **${room.settings.minWords}** từ\nTối đa: **${room.settings.maxWords}** từ`,
@@ -221,7 +290,7 @@ function buildConfigPage3(room) {
 function buildConfigPage4(room) {
   const embed = new EmbedBuilder()
     .setColor(COLORS.SECONDARY)
-    .setTitle('⚙️ Cấu Hình Phòng - Trang 4: Quản trị phòng')
+    .setTitle('⚙️ Cấu Hình Phòng - Trang 5: Quản trị phòng')
     .setDescription('Các công cụ quản lý dành cho Host.');
 
   const row1 = new ActionRowBuilder().addComponents(

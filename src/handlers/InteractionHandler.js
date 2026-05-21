@@ -6,6 +6,7 @@ import {
   handleStart,
   handleConfig,
   handleMaxPlayersSelect,
+  handleGameModeToggle,
   handleHardcoreToggle,
   handleFastModeToggle,
   handleWordsInput,
@@ -48,6 +49,7 @@ export async function handleInteraction(interaction, commands) {
         case CUSTOM_IDS.START:       return handleStart(interaction);
         case CUSTOM_IDS.CONFIG:      return handleConfig(interaction);
         case CUSTOM_IDS.CFG_HARDCORE:  return handleHardcoreToggle(interaction);
+        case CUSTOM_IDS.CFG_GAMEMODE:  return handleGameModeToggle(interaction);
         case CUSTOM_IDS.CFG_FASTMODE:  return handleFastModeToggle(interaction);
         case CUSTOM_IDS.CFG_WORDS_INPUT: return handleWordsInput(interaction);
         case CUSTOM_IDS.CFG_KICK:    return handleKickButton(interaction);

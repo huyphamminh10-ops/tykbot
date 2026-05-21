@@ -2,7 +2,7 @@
 // Chạy script này một lần để đăng ký slash commands lên Discord API
 // Command: node src/deploy-commands.js
 
-import 'dotenv/config';
+import 'dotenv/config.js';
 import { REST, Routes } from 'discord.js';
 import { data as tykCreateData } from './commands/tykcreate.js';
 
