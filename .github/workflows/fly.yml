@@ -1,0 +1,49 @@
+# .github/workflows/fly.yml
+# Tự động deploy TykBot lên Fly.io mỗi khi push lên branch main
+
+name: Deploy to Fly.io
+
+on:
+  push:
+    branches:
+      - main        # Trigger khi push lên main
+    paths-ignore:
+      - '**.md'     # Bỏ qua nếu chỉ thay đổi file README / docs
+      - '.env*'     # Bỏ qua file env (không nên commit anyway)
+
+  # Cho phép chạy thủ công từ tab Actions trên GitHub
+  workflow_dispatch:
+
+# Chỉ cho phép 1 deploy chạy cùng lúc — nếu có deploy mới thì hủy deploy cũ
+concurrency:
+  group: fly-deploy
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    name: 🚀 Deploy TykBot → Fly.io
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      # ── 1. Checkout code ────────────────────────────────────────────────────
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+
+      # ── 2. Cài flyctl ───────────────────────────────────────────────────────
+      - name: 🛠️ Setup flyctl
+        uses: superfly/flyctl-actions/setup-flyctl@master
+
+      # ── 3. Deploy lên Fly.io ────────────────────────────────────────────────
+      # --remote-only: build Docker image trên máy chủ của Fly (không cần Docker local)
+      # --auto-confirm: không hỏi xác nhận
+      - name: 🚢 Deploy to Fly.io
+        run: flyctl deploy --remote-only --auto-confirm
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+
+      # ── 4. Kiểm tra trạng thái sau deploy ──────────────────────────────────
+      - name: 🔍 Check deployment status
+        run: flyctl status
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
