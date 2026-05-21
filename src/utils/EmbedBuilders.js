@@ -118,16 +118,21 @@ export function buildConfigEmbed(room, page = 1) {
 
   const { embed, components: pageComponents } = pages[page] || pages[1];
 
-  // Navigation: bỏ indicator button disabled — Discord mobile tự wrap nút disabled xuống dòng mới
+  // Navigation: 2 button rõ ràng, label page ở giữa dưới dạng disabled
   const navRow = new ActionRowBuilder().addComponents(
     new ButtonBuilder()
       .setCustomId(CUSTOM_IDS.CFG_PAGE_PREV)
-      .setLabel('◀ Trang trước')
+      .setLabel('◀ Trước')
       .setStyle(ButtonStyle.Secondary)
       .setDisabled(page <= 1),
     new ButtonBuilder()
+      .setCustomId('tyk_cfg_noop')
+      .setLabel(`${page} / ${TOTAL_PAGES}`)
+      .setStyle(ButtonStyle.Secondary)
+      .setDisabled(true),
+    new ButtonBuilder()
       .setCustomId(CUSTOM_IDS.CFG_PAGE_NEXT)
-      .setLabel(`Trang ${page}/${TOTAL_PAGES}  ▶`)
+      .setLabel('Tiếp ▶')
       .setStyle(ButtonStyle.Secondary)
       .setDisabled(page >= TOTAL_PAGES),
   );
@@ -205,7 +210,7 @@ function buildConfigPageGameMode(room) {
 function buildConfigPage1(room) {
   const embed = new EmbedBuilder()
     .setColor(COLORS.SECONDARY)
-    .setTitle('⚙️ Cấu Hình Phòng - Trang 1: Số lượng người chơi')
+    .setTitle('⚙️ Cấu Hình Phòng - Trang 2: Số lượng người chơi')
     .setDescription(`Hiện tại: **${room.settings.maxPlayers} người tối đa**`);
 
   const options = [];

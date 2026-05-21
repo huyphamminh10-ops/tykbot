@@ -11,6 +11,20 @@ import { gameEngine } from '../services/GameEngine.js';
 import { buildLobbyEmbed, buildConfigEmbed } from '../utils/EmbedBuilders.js';
 import { CUSTOM_IDS, ROOM_STATUS } from '../config/constants.js';
 
+
+// ─── Helper: lấy page hiện tại từ message ────────────────────────────────────
+
+function getCurrentPage(interaction) {
+  // Indicator button có label dạng "X / 5" — parse từ đó
+  for (const row of interaction.message.components) {
+    for (const btn of row.components) {
+      const match = btn.label?.match(/^(\d+)\s*\/\s*(\d+)$/);
+      if (match) return parseInt(match[1]);
+    }
+  }
+  return 1;
+}
+
 // ─── Join Button ─────────────────────────────────────────────────────────────
 
 export async function handleJoin(interaction) {
@@ -149,7 +163,7 @@ export async function handleMaxPlayersSelect(interaction) {
   if (lobbyMsg) await lobbyMsg.edit(buildLobbyEmbed(room));
 
   // Cập nhật lại config embed
-  await interaction.update(buildConfigEmbed(room, 1));
+  await interaction.update(buildConfigEmbed(room, getCurrentPage(interaction)));
 }
 
 // ─── Config: Game Mode Toggle ─────────────────────────────────────────────────
@@ -165,10 +179,10 @@ export async function handleGameModeToggle(interaction) {
   const lobbyMsg = await interaction.channel.messages.fetch(room.lobbyMessageId).catch(() => null);
   if (lobbyMsg) await lobbyMsg.edit(buildLobbyEmbed(room));
 
-  await interaction.update(buildConfigEmbed(room, 1));
+  await interaction.update(buildConfigEmbed(room, getCurrentPage(interaction)));
 }
 
-// ─── Config: Hardcore Toggle ──────────────────────────────────────────────────
+// ─── Config: Hardcore Toggle ─────────────────────────────────────────────────
 
 export async function handleHardcoreToggle(interaction) {
   const room = roomManager.getRoom(interaction.guildId);
@@ -181,7 +195,7 @@ export async function handleHardcoreToggle(interaction) {
   const lobbyMsg = await interaction.channel.messages.fetch(room.lobbyMessageId).catch(() => null);
   if (lobbyMsg) await lobbyMsg.edit(buildLobbyEmbed(room));
 
-  await interaction.update(buildConfigEmbed(room, 2));
+  await interaction.update(buildConfigEmbed(room, getCurrentPage(interaction)));
 }
 
 // ─── Config: Fast Mode Toggle ─────────────────────────────────────────────────
@@ -197,7 +211,7 @@ export async function handleFastModeToggle(interaction) {
   const lobbyMsg = await interaction.channel.messages.fetch(room.lobbyMessageId).catch(() => null);
   if (lobbyMsg) await lobbyMsg.edit(buildLobbyEmbed(room));
 
-  await interaction.update(buildConfigEmbed(room, 2));
+  await interaction.update(buildConfigEmbed(room, getCurrentPage(interaction)));
 }
 
 // ─── Config: Word Count Button (Open Modal) ───────────────────────────────────
@@ -430,11 +444,14 @@ export async function handleConfigPageNav(interaction, direction) {
     return interaction.reply({ content: '❌ Không có quyền.', ephemeral: true });
   }
 
-  // Extract current page from button label
-  const label = interaction.message.components
-    .at(-1)?.components[1]?.label || 'Trang 1/4';
-  const match = label.match(/Trang (\d+)/);
-  let currentPage = match ? parseInt(match[1]) : 1;
+  // Extract current page từ indicator button label dạng "X / 5"
+  let currentPage = 1;
+  for (const row of interaction.message.components) {
+    for (const btn of row.components) {
+      const match = btn.label?.match(/^(\d+)\s*\/\s*(\d+)$/);
+      if (match) { currentPage = parseInt(match[1]); break; }
+    }
+  }
 
   const newPage = direction === 'next'
     ? Math.min(currentPage + 1, 5)
