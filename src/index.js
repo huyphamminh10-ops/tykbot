@@ -1,6 +1,6 @@
 // src/events/index.js
 import { Events } from 'discord.js';
-import { handleInteraction } from '../handlers/InteractionHandler.js';
+import { handleInteraction } from './handlers/InteractionHandler.js';
 
 /**
  * Đăng ký tất cả event handlers lên Discord Client
