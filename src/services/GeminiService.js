@@ -1,5 +1,5 @@
 // src/services/GeminiService.js
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { GoogleGenerativeAI, Type } from '@google/generative-ai'; // Thêm Type để định nghĩa Schema
 import { GAME_CONFIG, GAME_MODE } from '../config/constants.js';
 
 class GeminiService {
@@ -24,7 +24,8 @@ class GeminiService {
       ? GAME_CONFIG.TIMER_SENTENCES
       : GAME_CONFIG.CLASSIC_SENTENCES;
 
-    const prompt = `Hãy tạo ra danh sách gồm ${count} câu văn bằng tiếng Việt (hoặc xen kẽ tiếng Anh ngẫu nhiên khoảng 30%). Mỗi câu phải có độ dài từ ${minWords} đến ${maxWords} từ. Các câu phải có nội dung phong phú, đa dạng chủ đề (khoa học, đời sống, thể thao, công nghệ, lịch sử, văn học), không lặp lại, chứa cả dấu câu cơ bản (dấu phẩy, dấu chấm, dấu hỏi). Các câu phải rõ ràng, dễ nhìn để gõ phím. Trả về định dạng JSON thuần dạng mảng chuỗi: ["câu 1", "câu 2", ...] không kèm markdown code block, không kèm bất kỳ văn bản giải thích nào khác ngoài mảng JSON.`;
+    // Rút gọn prompt, không cần dặn dò việc chống markdown nữa vì cấu hình hệ thống sẽ lo
+    const prompt = `Hãy tạo ra danh sách gồm ${count} câu văn bằng tiếng Việt (hoặc xen kẽ tiếng Anh ngẫu nhiên khoảng 30%). Mỗi câu phải có độ dài từ ${minWords} đến ${maxWords} từ. Các câu phải có nội dung phong phú, đa dạng chủ đề (khoa học, đời sống, thể thao, công nghệ, lịch sử, văn học), không lặp lại, chứa cả dấu câu cơ bản (dấu phẩy, dấu chấm, dấu hỏi). Các câu phải rõ ràng, dễ nhìn để gõ phím.`;
 
     const maxRetries = 3;
 
@@ -35,20 +36,23 @@ class GeminiService {
           generationConfig: {
             temperature: 0.9,
             maxOutputTokens: 8192,
+            // ÉP KIỂU PHẢN HỒI LÀ JSON CHUẨN
+            responseMimeType: "application/json",
+            // ĐỊNH NGHĨA SCHEMA: Bắt buộc cấu trúc trả về là một Mảng các Chuỗi (Array of Strings)
+            responseSchema: {
+              type: Type.ARRAY,
+              items: {
+                type: Type.STRING
+              }
+            }
           },
         });
 
         const result = await model.generateContent(prompt);
         const raw = result.response.text().trim();
 
-        // Làm sạch: loại bỏ markdown code blocks nếu model vẫn trả về
-        const cleaned = raw
-          .replace(/^```json\s*/i, '')
-          .replace(/^```\s*/i, '')
-          .replace(/\s*```$/i, '')
-          .trim();
-
-        const sentences = JSON.parse(cleaned);
+        // Nhờ có responseMimeType, "raw" lúc này CHẮC CHẮN là mảng JSON sạch, không có ```json
+        const sentences = JSON.parse(raw);
 
         if (!Array.isArray(sentences)) {
           throw new Error('Response is not an array');
@@ -67,7 +71,8 @@ class GeminiService {
         return filtered;
 
       } catch (error) {
-        console.error(`[GeminiService] Attempt ${attempt}/${maxRetries} failed:`, error.message);
+        // In rõ cả stack error để nếu có lỗi khác (như sai API Key) bạn sẽ nhìn thấy ngay trong console log
+        console.error(`[GeminiService] Attempt ${attempt}/${maxRetries} failed:`, error);
 
         if (attempt === maxRetries) {
           console.error('[GeminiService] All retries failed, using fallback sentences');
@@ -81,31 +86,35 @@ class GeminiService {
   }
 
   /**
-   * Sinh thêm câu bù khi người chơi bị lỗi (để tổng số câu không bị thiếu)
+   * Sinh thêm câu bù khi người chơi bị lỗi
    * @param {number} needed - Số câu cần sinh thêm
    * @param {number} minWords
    * @param {number} maxWords
    * @returns {Promise<string[]>}
    */
   async generateExtraSentences(needed, minWords, maxWords) {
-    const prompt = `Hãy tạo ra danh sách gồm ${needed} câu văn bằng tiếng Việt (hoặc xen kẽ tiếng Anh ngẫu nhiên khoảng 30%). Mỗi câu phải có độ dài từ ${minWords} đến ${maxWords} từ. Đa dạng chủ đề, không lặp lại. Trả về định dạng JSON thuần dạng mảng chuỗi: ["câu 1", "câu 2", ...] không kèm markdown code block, không kèm bất kỳ văn bản giải thích nào.`;
+    const prompt = `Hãy tạo ra danh sách gồm ${needed} câu văn bằng tiếng Việt (hoặc xen kẽ tiếng Anh ngẫu nhiên khoảng 30%). Mỗi câu phải có độ dài từ ${minWords} đến ${maxWords} từ. Đa dạng chủ đề, không lặp lại.`;
 
     try {
       const model = this.client.getGenerativeModel({
         model: this.modelName,
-        generationConfig: { temperature: 0.9, maxOutputTokens: 2048 },
+        generationConfig: { 
+          temperature: 0.9, 
+          maxOutputTokens: 2048,
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: Type.ARRAY,
+            items: { type: Type.STRING }
+          }
+        },
       });
       const result = await model.generateContent(prompt);
       const raw = result.response.text().trim();
-      const cleaned = raw
-        .replace(/^```json\s*/i, '')
-        .replace(/^```\s*/i, '')
-        .replace(/\s*```$/i, '')
-        .trim();
-      const sentences = JSON.parse(cleaned);
+      const sentences = JSON.parse(raw);
       if (!Array.isArray(sentences)) throw new Error('Not an array');
       return sentences.filter(s => typeof s === 'string' && s.trim().length > 0).map(s => s.trim());
-    } catch {
+    } catch (error) {
+      console.error(`[GeminiService] Extra sentences generation failed:`, error);
       return this._getFallbackSentences(needed);
     }
   }
