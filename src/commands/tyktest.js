@@ -1,6 +1,6 @@
 // src/commands/tyktest.js
 import { SlashCommandBuilder } from 'discord.js';
-import { geminiService } from '../services/GeminiService.js';
+import { geminiService } from '../services/LlamaService.js';
 import { antiCheatService } from '../services/AntiCheatService.js';
 import { GAME_CONFIG, COLORS } from '../config/constants.js';
 import { EmbedBuilder } from 'discord.js';
