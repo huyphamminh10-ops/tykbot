@@ -1,6 +1,15 @@
 // src/services/GeminiService.js
-import { GoogleGenerativeAI, Type } from '@google/generative-ai'; // Thêm Type để định nghĩa Schema
+import { GoogleGenerativeAI } from '@google/generative-ai';
 import { GAME_CONFIG, GAME_MODE } from '../config/constants.js';
+
+// SchemaType dùng string literal để tránh lỗi import Type không tồn tại trong @google/generative-ai
+const SchemaType = {
+  ARRAY: 'ARRAY',
+  STRING: 'STRING',
+  NUMBER: 'NUMBER',
+  BOOLEAN: 'BOOLEAN',
+  OBJECT: 'OBJECT',
+};
 
 class GeminiService {
   constructor() {
@@ -24,7 +33,6 @@ class GeminiService {
       ? GAME_CONFIG.TIMER_SENTENCES
       : GAME_CONFIG.CLASSIC_SENTENCES;
 
-    // Rút gọn prompt, không cần dặn dò việc chống markdown nữa vì cấu hình hệ thống sẽ lo
     const prompt = `Hãy tạo ra danh sách gồm ${count} câu văn bằng tiếng Việt (hoặc xen kẽ tiếng Anh ngẫu nhiên khoảng 30%). Mỗi câu phải có độ dài từ ${minWords} đến ${maxWords} từ. Các câu phải có nội dung phong phú, đa dạng chủ đề (khoa học, đời sống, thể thao, công nghệ, lịch sử, văn học), không lặp lại, chứa cả dấu câu cơ bản (dấu phẩy, dấu chấm, dấu hỏi). Các câu phải rõ ràng, dễ nhìn để gõ phím.`;
 
     const maxRetries = 3;
@@ -40,9 +48,9 @@ class GeminiService {
             responseMimeType: "application/json",
             // ĐỊNH NGHĨA SCHEMA: Bắt buộc cấu trúc trả về là một Mảng các Chuỗi (Array of Strings)
             responseSchema: {
-              type: Type.ARRAY,
+              type: SchemaType.ARRAY,
               items: {
-                type: Type.STRING
+                type: SchemaType.STRING
               }
             }
           },
@@ -71,7 +79,6 @@ class GeminiService {
         return filtered;
 
       } catch (error) {
-        // In rõ cả stack error để nếu có lỗi khác (như sai API Key) bạn sẽ nhìn thấy ngay trong console log
         console.error(`[GeminiService] Attempt ${attempt}/${maxRetries} failed:`, error);
 
         if (attempt === maxRetries) {
@@ -98,13 +105,13 @@ class GeminiService {
     try {
       const model = this.client.getGenerativeModel({
         model: this.modelName,
-        generationConfig: { 
-          temperature: 0.9, 
+        generationConfig: {
+          temperature: 0.9,
           maxOutputTokens: 2048,
           responseMimeType: "application/json",
           responseSchema: {
-            type: Type.ARRAY,
-            items: { type: Type.STRING }
+            type: SchemaType.ARRAY,
+            items: { type: SchemaType.STRING }
           }
         },
       });
