@@ -30,16 +30,22 @@ const client = new Client({
 // ── Load Commands ──────────────────────────────────────────────────────────────
 const commands = new Collection();
 
-// Dynamic import tất cả commands
-const commandModules = [
-  await import('./commands/tykcreate.js'),
-  await import('./commands/tyktest.js'),
+// Danh sách commands: [path, tên hiển thị]
+const commandFiles = [
+  ['./commands/tykcreate.js', 'tykcreate'],
+  ['./commands/tyktest.js',   'tyktest'],
 ];
 
-for (const module of commandModules) {
-  if (module.data && module.execute) {
-    commands.set(module.data.name, module);
-    console.log(`✅ Loaded command: /${module.data.name}`);
+for (const [path, name] of commandFiles) {
+  try {
+    const module = await import(path);
+    if (module.data && module.execute) {
+      commands.set(module.data.name, module);
+      console.log(`✅ Loaded command: /${module.data.name}`);
+    }
+  } catch (err) {
+    // File chưa có hoặc lỗi cú pháp — bỏ qua, không crash bot
+    console.warn(`⚠️  Bỏ qua command "${name}": ${err.message}`);
   }
 }
 
