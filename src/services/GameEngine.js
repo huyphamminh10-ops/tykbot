@@ -347,6 +347,9 @@ class GameEngine {
   }
 
   async _doEndRound(room, client) {
+    // Dừng replenisher trước khi kết thúc round (Timer mode)
+    this._stopSentenceReplenisher(room);
+
     const activePlayers = room.getActivePlayers();
     const loser = room.findLowestScorer();
 
@@ -458,9 +461,15 @@ class GameEngine {
       }
     }, updateInterval);
 
+    // Sinh câu bù mỗi TIMER_REPLENISH_INTERVAL ms
+    this._startSentenceReplenisher(room);
+
     // Main round timer
     room._roundTimer = setTimeout(async () => {
       clearInterval(intervalId);
+
+      // Dừng replenisher khi round kết thúc
+      this._stopSentenceReplenisher(room);
 
       // Khóa tất cả thread
       for (const [userId, thread] of room.playerThreads.entries()) {
@@ -474,6 +483,52 @@ class GameEngine {
 
       await this._endRound(room, client);
     }, duration);
+  }
+
+  /**
+   * Mỗi TIMER_REPLENISH_INTERVAL ms, sinh thêm TIMER_REPLENISH_COUNT câu bù
+   * vào room.sentences để người chơi không bao giờ hết câu trong Timer mode.
+   * @param {import('../managers/GlobalRoomManager.js').Room} room
+   */
+  _startSentenceReplenisher(room) {
+    // Dừng replenisher cũ nếu có (phòng bắt đầu round mới)
+    this._stopSentenceReplenisher(room);
+
+    room._replenishInterval = setInterval(async () => {
+      if (room.status !== ROOM_STATUS.PLAYING) {
+        this._stopSentenceReplenisher(room);
+        return;
+      }
+
+      try {
+        const { minWords, maxWords } = room.settings;
+        const extras = await geminiService.generateExtraSentences(
+          GAME_CONFIG.TIMER_REPLENISH_COUNT,
+          minWords,
+          maxWords,
+        );
+
+        if (extras && extras.length > 0) {
+          room.sentences.push(...extras);
+          console.log(
+            `[GameEngine] Timer replenish: +${extras.length} câu → tổng ${room.sentences.length} câu (phòng ${room.id})`
+          );
+        }
+      } catch (err) {
+        console.error('[GameEngine] Sentence replenisher error:', err.message);
+      }
+    }, GAME_CONFIG.TIMER_REPLENISH_INTERVAL);
+  }
+
+  /**
+   * Dừng interval sinh câu bù của room.
+   * @param {import('../managers/GlobalRoomManager.js').Room} room
+   */
+  _stopSentenceReplenisher(room) {
+    if (room._replenishInterval) {
+      clearInterval(room._replenishInterval);
+      room._replenishInterval = null;
+    }
   }
 
   // ─── Collector Cleanup ─────────────────────────────────────────────────────

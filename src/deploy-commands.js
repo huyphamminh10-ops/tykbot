@@ -5,9 +5,11 @@
 import 'dotenv/config.js';
 import { REST, Routes } from 'discord.js';
 import { data as tykCreateData } from './commands/tykcreate.js';
+import { data as tykTestData } from './commands/tyktest.js';
 
 const commands = [
   tykCreateData.toJSON(),
+  tykTestData.toJSON(),
 ];
 
 const rest = new REST().setToken(process.env.DISCORD_TOKEN);

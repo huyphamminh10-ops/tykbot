@@ -23,8 +23,11 @@ export const GAME_CONFIG = {
 
   // Classic mode sentences
   CLASSIC_SENTENCES: 40,
-  // Timer mode sentences
+  // Timer mode sentences (initial pool)
   TIMER_SENTENCES: 100,
+  // Timer mode: sinh thêm câu mỗi N ms và số câu mỗi lần
+  TIMER_REPLENISH_INTERVAL: 12000, // 12 giây
+  TIMER_REPLENISH_COUNT: 15,       // 15 câu/lần
 
   // Timer mode timing
   TIMER_ROUND1_DURATION: 120000, // 2m00s
@@ -37,6 +40,12 @@ export const GAME_CONFIG = {
   // Canvas image dimensions
   CANVAS_WIDTH: 800,
   CANVAS_HEIGHT: 160,
+
+  // /test command
+  TEST_SENTENCES: 60,        // Tổng số câu sinh cho 1 phiên test
+  TEST_DURATION_MS: 60000,   // 1 phút
+  TEST_MIN_WORDS: 4,
+  TEST_MAX_WORDS: 10,
 };
 
 export const ROOM_STATUS = {

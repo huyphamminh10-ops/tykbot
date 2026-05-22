@@ -33,7 +33,7 @@ const commands = new Collection();
 // Dynamic import tất cả commands
 const commandModules = [
   await import('./commands/tykcreate.js'),
-  // Thêm commands khác tại đây khi cần
+  await import('./commands/tyktest.js'),
 ];
 
 for (const module of commandModules) {
