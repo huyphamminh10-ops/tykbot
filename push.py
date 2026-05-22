@@ -1,3 +1,13 @@
+#!/usr/bin/env python3
+"""
+push.py — Deploy slash commands, commit và push lên remote.
+
+Cách dùng:
+  python3 push.py          # push bình thường
+  python3 push.py -f       # git pull rebase trước, sau đó push --force-with-lease
+  python3 push.py --force  # như trên
+"""
+
 import subprocess
 import sys
 import os
@@ -7,6 +17,8 @@ from datetime import datetime
 COUNTER_FILE = ".push_counter"
 MAX_RETRIES  = 5
 RETRY_DELAY  = 5  # giây giữa mỗi lần thử
+
+FORCE = "-f" in sys.argv or "--force" in sys.argv
 
 # ── Helper ────────────────────────────────────────────────────────────────────
 
@@ -39,11 +51,23 @@ if deploy.returncode != 0:
     sys.exit(1)
 print("✅ Slash commands deployed.")
 
+# ── Force mode: git pull --rebase trước để tránh conflict ────────────────────
+
+if FORCE:
+    section("⚡  Force Mode — Git Pull Rebase")
+    print("  Đang kéo code mới nhất từ remote về (rebase)...")
+    pull = run(["git", "pull", "--rebase", "origin", "main"])
+    if pull.returncode != 0:
+        print("  ❌ git pull --rebase thất bại.")
+        print("  Có thể có conflict. Hãy giải quyết thủ công rồi chạy lại.")
+        sys.exit(1)
+    print("  ✅ Pull rebase thành công.")
+
 # ── Git add + commit ──────────────────────────────────────────────────────────
 
 section("📦  Git Commit")
 
-timestamp = datetime.now().strftime("%Y-%m-%d %H:%M")
+timestamp  = datetime.now().strftime("%Y-%m-%d %H:%M")
 commit_msg = f"build({count}): update — {timestamp}"
 
 run(["git", "add", "."], check=True)
@@ -57,11 +81,17 @@ print(f"📝 Committed: \"{commit_msg}\"")
 
 # ── Git push với retry ────────────────────────────────────────────────────────
 
-section("🚀  Git Push")
+section("🚀  Git Push" + (" (force-with-lease)" if FORCE else ""))
+
+# --force-with-lease an toàn hơn --force: chỉ overwrite nếu remote vẫn ở trạng thái
+# mình biết — tránh ghi đè commit của người khác nếu có collaborator.
+push_cmd = ["git", "push", "origin", "main"]
+if FORCE:
+    push_cmd.append("--force-with-lease")
 
 for attempt in range(1, MAX_RETRIES + 1):
     print(f"  [{attempt}/{MAX_RETRIES}] Pushing commit #{count}...")
-    result = run(["git", "push", "origin", "main"])
+    result = run(push_cmd)
 
     if result.returncode == 0:
         with open(COUNTER_FILE, "w") as f:
@@ -82,4 +112,6 @@ section("✅  Done")
 print(f"  Commit  : #{count}")
 print(f"  Message : {commit_msg}")
 print(f"  Time    : {timestamp}")
+if FORCE:
+    print(f"  Mode    : force-with-lease")
 print(f"  Next    : #{count + 1}\n")
