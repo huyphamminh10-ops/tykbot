@@ -1,6 +1,6 @@
 # ⌨ Type your Keyboard!!! — Discord Battle Royale Bot
 
-Bot Discord game **Battle Royale gõ phím** với hệ thống chống gian lận bằng Canvas AI và sinh đề bằng Gemini.
+Bot Discord game **Battle Royale gõ phím** với hệ thống chống gian lận bằng Canvas AI và sinh đề bằng Llama 3 (Groq).
 
 ---
 
@@ -16,7 +16,7 @@ src/
 │   └── GlobalRoomManager.js    # Quản lý phòng + queue (Singleton)
 ├── services/
 │   ├── GameEngine.js           # Vòng lặp gameplay chính
-│   ├── GeminiService.js        # Sinh đề bằng Google Gemini AI
+│   ├── LlamaService.js        # Sinh đề bằng Llama 3 qua Groq API
 │   ├── CanvasService.js        # Render ảnh chống OCR/copy-paste
 │   └── AntiCheatService.js     # Phát hiện gian lận WPM
 ├── commands/
@@ -56,7 +56,7 @@ Chỉnh sửa `.env`:
 ```env
 DISCORD_TOKEN=your_discord_bot_token
 CLIENT_ID=your_application_client_id
-GEMINI_API_KEY=your_gemini_api_key
+GROQ_API_KEY=your_groq_api_key
 ```
 
 ### 4. Discord Bot Setup
@@ -119,7 +119,7 @@ npm run dev
 | WPM Detection | Kick nếu >230 WPM liên tiếp 2 câu |
 
 ### Chế Độ Classic
-- 50 câu/round (sinh bởi Gemini)
+- 50 câu/round (sinh bởi Llama 3 via Groq)
 - Round kết thúc khi ai đó hoàn thành 50 câu
 - Người ít điểm nhất bị loại
 - Tiếp tục đến còn 1 người
@@ -143,7 +143,7 @@ npm run dev
 | Package | Phiên bản | Mục đích |
 |---------|-----------|---------|
 | discord.js | ^14.16.3 | Discord API client |
-| @google/genai | ^1.0.1 | Gemini AI sinh đề |
+| groq-sdk (fetch) | built-in | Llama 3 via Groq API sinh đề |
 | canvas | ^2.11.2 | Render ảnh chống gian lận |
 | dotenv | ^16.4.5 | Quản lý biến môi trường |
 

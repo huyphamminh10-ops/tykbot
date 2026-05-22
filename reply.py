@@ -28,7 +28,7 @@ EXTERNAL_ROOTS = [
 
 # Các thư mục / pattern bị loại trừ khỏi zip
 EXCLUDE_DIRS = {".git", ".github", "node_modules"}
-EXCLUDE_EXTS = {".bak"}   # bỏ file backup của GeminiService.js.bak, v.v.
+EXCLUDE_EXTS = {".bak"}   # bỏ file backup .bak, v.v.
 
 # ─── HÀM TIỆN ÍCH ────────────────────────────────────────────────────────────
 

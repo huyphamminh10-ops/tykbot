@@ -1,53 +1,36 @@
-// src/events/index.js
-import { Events } from 'discord.js';
-import { handleInteraction } from './handlers/InteractionHandler.js';
+// src/index.js — Entry point chính của TykBot
+import 'dotenv/config';
+import { Client, GatewayIntentBits, Collection } from 'discord.js';
+import { data as tykCreateData, execute as tykCreateExecute } from './commands/tykcreate.js';
+import { data as tykTestData, execute as tykTestExecute } from './commands/tyktest.js';
+import { registerEvents } from './events/index.js';
 
-/**
- * Đăng ký tất cả event handlers lên Discord Client
- * @param {import('discord.js').Client} client
- * @param {import('discord.js').Collection} commands
- */
-export function registerEvents(client, commands) {
+// ── Khởi tạo Discord Client ───────────────────────────────────────────────────
+const client = new Client({
+  intents: [
+    GatewayIntentBits.Guilds,
+    GatewayIntentBits.GuildMessages,
+    GatewayIntentBits.MessageContent,
+    GatewayIntentBits.DirectMessages,
+  ],
+});
 
-  // ── Ready Event ───────────────────────────────────────────────────────────
-  client.once(Events.ClientReady, (readyClient) => {
-    console.log(`\n╔══════════════════════════════════════════╗`);
-    console.log(`║  ⌨  TYPE YOUR KEYBOARD!!!  BOT READY    ║`);
-    console.log(`╠══════════════════════════════════════════╣`);
-    console.log(`║  Logged in as: ${readyClient.user.tag.padEnd(26)}║`);
-    console.log(`║  Guilds: ${String(readyClient.guilds.cache.size).padEnd(32)}║`);
-    console.log(`╚══════════════════════════════════════════╝\n`);
+// ── Load commands vào Collection ─────────────────────────────────────────────
+const commands = new Collection();
+commands.set(tykCreateData.name, { data: tykCreateData, execute: tykCreateExecute });
+commands.set(tykTestData.name,   { data: tykTestData,   execute: tykTestExecute   });
 
-    // Set bot presence
-    readyClient.user.setPresence({
-      activities: [{ name: '⌨  Type your Keyboard!!!', type: 0 }],
-      status: 'online',
-    });
-  });
+// ── Đăng ký event handlers ────────────────────────────────────────────────────
+registerEvents(client, commands);
 
-  // ── Interaction Create ────────────────────────────────────────────────────
-  client.on(Events.InteractionCreate, (interaction) => {
-    // Chạy async handler và bắt lỗi để không crash bot
-    handleInteraction(interaction, commands).catch((err) => {
-      console.error('[Events.InteractionCreate] Fatal error:', err);
-    });
-  });
-
-  // ── Error Handling ────────────────────────────────────────────────────────
-  client.on(Events.Error, (error) => {
-    console.error('[Discord Client Error]:', error);
-  });
-
-  client.on(Events.Warn, (warning) => {
-    console.warn('[Discord Client Warning]:', warning);
-  });
-
-  // Xử lý unhandled promise rejections để tránh crash
-  process.on('unhandledRejection', (reason, promise) => {
-    console.error('[UnhandledRejection] at:', promise, 'reason:', reason);
-  });
-
-  process.on('uncaughtException', (error) => {
-    console.error('[UncaughtException]:', error);
-  });
+// ── Kiểm tra DISCORD_TOKEN ────────────────────────────────────────────────────
+if (!process.env.DISCORD_TOKEN) {
+  console.error('[index.js] ❌ DISCORD_TOKEN chưa được cấu hình! Kiểm tra file .env');
+  process.exit(1);
 }
+
+// ── Login ─────────────────────────────────────────────────────────────────────
+client.login(process.env.DISCORD_TOKEN).catch((err) => {
+  console.error('[index.js] ❌ Không thể login Discord:', err.message);
+  process.exit(1);
+});

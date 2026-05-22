@@ -107,7 +107,7 @@ def set_secrets(fly: str):
 
     if not secrets:
         print("❌ File .env trống hoặc chỉ chứa placeholder.")
-        print("   Hãy điền đầy đủ DISCORD_TOKEN, CLIENT_ID, GEMINI_API_KEY.")
+        print("   Hãy điền đầy đủ DISCORD_TOKEN, CLIENT_ID, GROQ_API_KEY.")
         sys.exit(1)
 
     # Ghép thành chuỗi KEY=VALUE cho fly secrets set
@@ -121,14 +121,14 @@ def guide_create_env():
     print("\n📝 Tạo file .env")
     discord_token  = input("   DISCORD_TOKEN   : ").strip()
     client_id      = input("   CLIENT_ID       : ").strip()
-    gemini_key     = input("   GEMINI_API_KEY  : ").strip()
+    groq_key       = input("   GROQ_API_KEY  : ").strip()
     max_rooms      = input("   MAX_GLOBAL_ROOMS (mặc định 150): ").strip() or "150"
     max_guild      = input("   MAX_GUILD_ROOMS  (mặc định 1)  : ").strip() or "1"
 
     with open(ENV_FILE, "w") as f:
         f.write(f"DISCORD_TOKEN={discord_token}\n")
         f.write(f"CLIENT_ID={client_id}\n")
-        f.write(f"GEMINI_API_KEY={gemini_key}\n")
+        f.write(f"GROQ_API_KEY={groq_key}\n")
         f.write(f"MAX_GLOBAL_ROOMS={max_rooms}\n")
         f.write(f"MAX_GUILD_ROOMS={max_guild}\n")
 
