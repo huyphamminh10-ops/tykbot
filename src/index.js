@@ -1,56 +1,53 @@
-// src/index.js
-import 'dotenv/config';
-import { Client, GatewayIntentBits, Collection, Partials } from 'discord.js';
-import { registerEvents } from './events/index.js';
+// src/events/index.js
+import { Events } from 'discord.js';
+import { handleInteraction } from '../handlers/InteractionHandler.js';
 
-// ── Validate Environment ──────────────────────────────────────────────────────
-const required = ['DISCORD_TOKEN', 'CLIENT_ID', 'GEMINI_API_KEY'];
-for (const key of required) {
-  if (!process.env[key]) {
-    console.error(`❌ Missing required environment variable: ${key}`);
-    process.exit(1);
-  }
+/**
+ * Đăng ký tất cả event handlers lên Discord Client
+ * @param {import('discord.js').Client} client
+ * @param {import('discord.js').Collection} commands
+ */
+export function registerEvents(client, commands) {
+
+  // ── Ready Event ───────────────────────────────────────────────────────────
+  client.once(Events.ClientReady, (readyClient) => {
+    console.log(`\n╔══════════════════════════════════════════╗`);
+    console.log(`║  ⌨  TYPE YOUR KEYBOARD!!!  BOT READY    ║`);
+    console.log(`╠══════════════════════════════════════════╣`);
+    console.log(`║  Logged in as: ${readyClient.user.tag.padEnd(26)}║`);
+    console.log(`║  Guilds: ${String(readyClient.guilds.cache.size).padEnd(32)}║`);
+    console.log(`╚══════════════════════════════════════════╝\n`);
+
+    // Set bot presence
+    readyClient.user.setPresence({
+      activities: [{ name: '⌨  Type your Keyboard!!!', type: 0 }],
+      status: 'online',
+    });
+  });
+
+  // ── Interaction Create ────────────────────────────────────────────────────
+  client.on(Events.InteractionCreate, (interaction) => {
+    // Chạy async handler và bắt lỗi để không crash bot
+    handleInteraction(interaction, commands).catch((err) => {
+      console.error('[Events.InteractionCreate] Fatal error:', err);
+    });
+  });
+
+  // ── Error Handling ────────────────────────────────────────────────────────
+  client.on(Events.Error, (error) => {
+    console.error('[Discord Client Error]:', error);
+  });
+
+  client.on(Events.Warn, (warning) => {
+    console.warn('[Discord Client Warning]:', warning);
+  });
+
+  // Xử lý unhandled promise rejections để tránh crash
+  process.on('unhandledRejection', (reason, promise) => {
+    console.error('[UnhandledRejection] at:', promise, 'reason:', reason);
+  });
+
+  process.on('uncaughtException', (error) => {
+    console.error('[UncaughtException]:', error);
+  });
 }
-
-// ── Initialize Discord Client ─────────────────────────────────────────────────
-const client = new Client({
-  intents: [
-    GatewayIntentBits.Guilds,
-    GatewayIntentBits.GuildMessages,
-    GatewayIntentBits.MessageContent,
-    GatewayIntentBits.DirectMessages,
-    GatewayIntentBits.GuildMembers,
-  ],
-  partials: [
-    Partials.Channel,   // Cần để nhận DM
-    Partials.Message,
-  ],
-});
-
-// ── Load Commands ──────────────────────────────────────────────────────────────
-const commands = new Collection();
-
-// Danh sách commands: [path, tên hiển thị]
-const commandFiles = [
-  ['./commands/tykcreate.js', 'tykcreate'],
-  ['./commands/tyktest.js',   'tyktest'],
-];
-
-for (const [path, name] of commandFiles) {
-  try {
-    const module = await import(path);
-    if (module.data && module.execute) {
-      commands.set(module.data.name, module);
-      console.log(`✅ Loaded command: /${module.data.name}`);
-    }
-  } catch (err) {
-    // File chưa có hoặc lỗi cú pháp — bỏ qua, không crash bot
-    console.warn(`⚠️  Bỏ qua command "${name}": ${err.message}`);
-  }
-}
-
-// ── Register Events ────────────────────────────────────────────────────────────
-registerEvents(client, commands);
-
-// ── Connect to Discord ─────────────────────────────────────────────────────────
-await client.login(process.env.DISCORD_TOKEN);

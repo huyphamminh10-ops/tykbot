@@ -5,7 +5,7 @@ import {
   ChannelType,
 } from 'discord.js';
 import { roomManager } from '../managers/GlobalRoomManager.js';
-import { geminiService } from './GeminiService.js';
+import { geminiService } from './LlamaService.js';
 import { canvasService } from './CanvasService.js';
 import { antiCheatService } from './AntiCheatService.js';
 import {
@@ -27,7 +27,7 @@ class GameEngine {
   // ─── Game Start ────────────────────────────────────────────────────────────
 
   /**
-   * Bắt đầu game: Load đề từ Gemini, tạo thread cho từng người chơi
+   * Bắt đầu game: Load đề từ Llama (Groq), tạo thread cho từng người chơi
    * @param {import('../managers/GlobalRoomManager.js').Room} room
    * @param {import('discord.js').TextChannel} channel
    * @param {import('discord.js').Client} client
@@ -44,7 +44,7 @@ class GameEngine {
         await lobbyMsg.edit(buildLoadingEmbed(room));
       }
 
-      // 2. Gọi Gemini sinh đề
+      // 2. Gọi Llama sinh đề
       room.sentences = await geminiService.generateSentences(
         room.gameMode,
         room.settings.minWords,
@@ -412,7 +412,7 @@ class GameEngine {
       await Promise.all(
         remainingPlayers.map(p =>
           room.playerThreads.get(p.userId)?.send({
-            content: `🔄 **ROUND ${room.currentRound} SẮP BẮT ĐẦU!**\nGemini đang tạo bộ đề mới...`,
+            content: `🔄 **ROUND ${room.currentRound} SẮP BẮT ĐẦU!**\nLlama đang tạo bộ đề mới...`,
           }).catch(() => null)
         )
       );
