@@ -79,7 +79,7 @@ class LlamaService {
       console.error('[LlamaService] GROQ_API_KEY chưa được cấu hình!');
     }
     this.apiKey = apiKey;
-    this.model = 'llama3-70b-8192'; // Llama 3 70B qua Groq
+    this.model = 'llama-3.3-70b-versatile';
     this.apiUrl = 'https://api.groq.com/openai/v1/chat/completions';
 
     // Cache: tránh gọi API liên tục khi nhiều phòng start gần nhau
